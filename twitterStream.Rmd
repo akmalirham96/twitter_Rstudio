@@ -1,0 +1,95 @@
+---
+title: "twitterAnalysis"
+output: html_document
+---
+
+```{r include=FALSE}
+highway <- read.csv(file.choose(),header = T)
+str(highway)
+library(tm)
+library(stopwords)
+corpus <- iconv(highway$text,to = 'UTF-8', sub = "byte")
+corpus <- Corpus(VectorSource(corpus))
+corpus <- tm_map(corpus, tolower)
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+cleanset <- tm_map(corpus,removeWords,stopwords("ms", source = "stopwords-iso"))
+removeURL <- function(x) gsub('http[[:alnum:]]*','',x)
+cleanset <- tm_map(cleanset, content_transformer(removeURL))
+cleanset <- tm_map(cleanset, removeWords, c('am','pm','amp'))
+cleanset <- tm_map(cleanset,stripWhitespace)
+tdm <- TermDocumentMatrix(cleanset)
+tdm
+tdm <- as.matrix(tdm)
+```
+
+##This is your matrix document
+
+```{r echo=FALSE}
+
+tdm[1:10,1:20]
+```
+
+##This is your bar plot for word
+
+```{r echo=FALSE}
+w <- rowSums(tdm)
+w <- subset(w,w>=25)
+barplot(w,
+        las = 2,
+        col = rainbow(50))
+```
+
+##This is your word cloud
+
+```{r include=FALSE}
+library(wordcloud)
+w <- sort(rowSums(tdm),decreasing = TRUE)
+set.seed(222)
+```
+
+
+```{r echo=FALSE}
+
+wordcloud(words = names(w),
+          freq = w,
+          max.word = 150,
+          random.order = F,
+          min.freq = 5,
+          colors = brewer.pal(8,'Dark2'),
+          scale = c(5,0.3),
+          rot.per = 0.3)
+```
+
+
+##This is your twitter analysis
+
+
+```{r include=FALSE}
+library(syuzhet)
+library(lubridate)
+library(ggplot2)
+library(scales)
+library(reshape2)
+library(dplyr)
+
+
+tweet <- iconv(highway$text,to = 'UTF-8', sub = "byte")
+
+
+s <- get_nrc_sentiment(tweet)
+head(s)
+
+
+
+
+```
+
+```{r echo=FALSE}
+barplot(colSums(s),
+        las = 2,
+        col = rainbow(10),
+        ylab = 'Count',
+        main = 'Sentiment on tweets')
+```
+
